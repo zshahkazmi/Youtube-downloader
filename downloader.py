@@ -127,6 +127,19 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
     info = fetch_video_info(args.url)
     matches = available_resolutions(info.get("formats", []))
 
+    if not matches:
+        print(
+            "No supported resolutions (360p to 4K) were found for this video. "
+            "Falling back to the best available format instead.",
+            file=sys.stderr,
+        )
+        try:
+            download_video(args.url, None, args.output)
+        except DownloadError as exc:
+            print(str(exc), file=sys.stderr)
+            return 1
+        return 0
+
     resolution = args.resolution
     if resolution and resolution not in matches:
         print(
@@ -138,12 +151,6 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
 
     if not resolution:
         resolution = prompt_for_resolution(matches)
-        if not resolution:
-            print(
-                "No supported resolutions (360p to 4K) were found for this video.",
-                file=sys.stderr,
-            )
-            return 1
 
     try:
         download_video(args.url, resolution, args.output)
